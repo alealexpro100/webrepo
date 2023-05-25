@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Login - WebRepo</title>
+    <!--  Android 5 Chrome Color-->
+    <meta name="theme-color" content="#EE6E73">
+    <!-- CSS and JS-->
+    <link rel="stylesheet" href="/static/materialize.css">
+    <link rel="stylesheet" href="/static/material-icons.css">
+    <link rel="stylesheet" href="login.css">
+    <script src="/static/zepto.js"></script>
+    <script src="/static/materialize.js"></script>
+    <script src="login.js"></script>
+</head>
+
+<body class="valign-wrapper">
+    <div class="container">
+        <main>
+            <div class="row">
+                <div class="card col offset-s4 s4 medium">
+                    <div class="card-image valign-wrapper">
+                        <img src="/static/logo_text.svg" alt="WebRepo logo" class="brand-logo">
+                        <h2>WebRepo</h2>
+                    </div>
+                    <div class="card-content">
+                        <div class="input-field">
+                            <i class="material-icons prefix">account_circle</i>
+                            <input id="username" type="text">   
+                            <label for="username">Username</label>
+                        </div>
+                        <div class="input-field">
+                            <i class="material-icons prefix">password</i>
+                            <input id="password" type="password">
+                            <label for="password">Password</label>
+                        </div>
+                    </div>
+                    <div class="card-action">
+                        <a id="login" class="waves-effect waves-light btn"><i class="material-icons left">login</i>Login</a>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+
+</html>
