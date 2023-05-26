@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Scoop - WebRepo</title>
+    <!--  Android 5 Chrome Color-->
+    <meta name="theme-color" content="#EE6E73">
+    <!-- CSS and JS-->
+    <link rel="stylesheet" href="/static/materialize.css">
+    <link rel="stylesheet" href="/static/material-icons.css">
+    <link rel="stylesheet" href="/admin/admin.css">
+    <script src="/static/cash.js"></script>
+    <script src="/static/materialize.js"></script>
+</head>
+
+<body>
+    <header>
+        <nav>
+            <div class="nav-wrapper">
+                <a href="/admin" class="brand-logo" id="logo-container">
+                    <object id="front-page-logo" type="image/svg+xml" data="/static/logo_text.svg">Your browser does not
+                        support SVG</object>
+                </a>
+                <ul id="nav-mobile" class="right hide-on-med-and-down">
+                    <li class="cyan"><a><i class="material-icons right">icecream</i><b>Scoop</b></a></li>
+                    <li><a href="/admin/settings"><i class="material-icons right">settings</i>Settings</a></li>
+                    <li><a href="/api/logout"><i class="material-icons right">logout</i>Exit</a></li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+    <main>
+        <script>
+            (function (e, t) {
+                window.addEventListener('load', init);
+                var data = {
+                    repos: []
+                };
+                async function get_repos() {
+                    await fetch("/api/scoop/repo/list", {
+                        method: "GET"
+                    }).then(async (res) => {
+                        if (res.ok) {
+                            data = await res.json();
+                            update_repos()
+                        } else {
+                            M.toast({ text: "Error loading repos!\nIs server running?" });
+                        }
+                    });
+                }
+                function update_repos() {
+                    if (data.repos.length != 0) {
+                        var to_fill = $("#repos_table");
+                        to_fill.empty();
+                        for (repo in data.repos) {
+                            var repo_name = data.repos[repo];
+                            line = "<a href=\"repo/?name=" + repo_name + "\" \class=\"collection-item\"><div style=\"font-size: 150%;\">Packages of repo \"" + repo_name + "\".</div></a>"
+                            to_fill.append(line);
+                        }
+                    }
+                }
+                async function init() {
+                    M.AutoInit();
+                    await get_repos();
+                    {
+                        var elems = document.querySelectorAll('.modal');
+                        var instances = M.Modal.init(elems, {});
+                    };
+                    $('#clone_button').on("click", element => {
+                        var name, repo;
+                        name = $("#clone_name").val();
+                        repo = $("#clone_repo").val();
+                        if (name == "" || repo == "") {
+                            M.toast({ text: "Error: one or more fields are empty." });
+                            return;
+                        }
+                        $("#clone_wait").removeAttr("hidden");
+                        fetch("/api/scoop/repo/clone?name=" + name + "&url=" + encodeURIComponent(repo), {
+                            method: "POST"
+                        }).then(res => {
+                            if (res.ok) {
+                                M.toast({ text: "Success.\nReloading page" });
+                                window.location.reload();
+                            } else {
+                                M.toast({ text: "Error: " + res.statusText });
+                            }
+                        });
+                    });
+                    $("#init_button").on("click", element => {
+                        var name;
+                        name = $("#init_name").val();
+                        if (name == "") {
+                            M.toast({ text: "Error: one or more fields are empty." });
+                            return;
+                        }
+                        $("#init_wait").removeAttr("hidden");
+                        fetch("/api/scoop/repo/init?name=" + name, {
+                            method: "POST"
+                        }).then(res => {
+                            if (res.ok) {
+                                M.toast({ text: "Success.\nReloading page" });
+                                window.location.reload();
+                            } else {
+                                M.toast({ text: "Error: " + res.statusText });
+                            }
+                        });
+                    })
+                    $("#del_button").on("click", element => {
+                        var name;
+                        name = $("#del_name").val();
+                        if (name == "") {
+                            M.toast({ text: "Error: one or more fields are empty." });
+                            return;
+                        }
+                        $("#del_wait").removeAttr("hidden");
+                        fetch("/api/scoop/repo/del?name=" + name, {
+                            method: "POST"
+                        }).then(res => {
+                            if (res.ok) {
+                                M.toast({ text: "Success.\nReloading page" });
+                                window.location.reload();
+                            } else {
+                                M.toast({ text: "Error: " + res.statusText });
+                            }
+                        });
+                    })
+                }
+            })();
+        </script>
+        <div id="repo_clone_modal" class="modal">
+            <div class="modal-content">
+                <h4 class="dispname">Clone new repo</h4>
+                <div>
+                    <p>
+                    <div class="input-field">
+                        <input id="clone_name" type="text" />
+                        <span>Name of new repo</span>
+                    </div>
+                    </p>
+                    <p>
+                    <div class="input-field">
+                        <input id="clone_repo" type="text" />
+                        <span>URL to cloning repo</span>
+                    </div>
+                    </p>
+                </div>
+                <a class="waves-effect waves-light btn" id="clone_button">Add</a>
+                <div id="clone_wait" hidden>
+                    <h5>Working on it...</h5>
+                    <div class="progress">
+                        <div class="indeterminate"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a href="#!" class="modal-close waves-effect btn-flat">Close</a>
+            </div>
+        </div>
+        <div id="repo_init_modal" class="modal">
+            <div class="modal-content">
+                <h4 class="dispname">Init repo</h4>
+                <div>
+                    <p>
+                    <div class="input-field">
+                        <input id="init_name" type="text" />
+                        <span>Name of repo to init</span>
+                    </div>
+                    </p>
+                </div>
+                <a class="waves-effect waves-light btn red" id="init_button">Add</a>
+                <div id="init_wait" hidden>
+                    <h5>Working on it...</h5>
+                    <div class="progress">
+                        <div class="indeterminate"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a href="#!" class="modal-close waves-effect btn-flat">Close</a>
+            </div>
+        </div>
+        <div id="repo_del_modal" class="modal">
+            <div class="modal-content">
+                <h4 class="dispname">Delete repo</h4>
+                <div>
+                    <p>
+                    <div class="input-field">
+                        <input id="del_name" type="text" class="repo_autocomplete" />
+                        <span>Name of repo to delete</span>
+                    </div>
+                    </p>
+                </div>
+                <a class="waves-effect waves-light btn red" id="del_button">Del</a>
+                <div id="del_wait" hidden>
+                    <h5>Working on it...</h5>
+                    <div class="progress">
+                        <div class="indeterminate"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a href="#!" class="modal-close waves-effect btn-flat">Close</a>
+            </div>
+        </div>
+        <div class="container">
+            <div class="card-panel">
+                <h4 class="center-align">Repositories</h4>
+                <div class="collection" id="repos_table">
+                    <a href="#!" class="collection-item">
+                        <h4 class="red-text">No repos found</h4>
+                    </a>
+                </div>
+                <div class="row">
+                    <div class="col offset-s9 s4">
+                        <a class='dropdown-trigger btn' href='#' data-target='repo_actions'><i
+                                class="material-icons right">more_vert</i>Repo actions</a>
+                        <ul id='repo_actions' class='dropdown-content'>
+                            <li><a id="repo_clone" data-target="repo_clone_modal" class="modal-trigger"><i
+                                        class="material-icons blue-text">content_copy</i>Clone</a></li>
+                            <li><a id="repo_init" data-target="repo_init_modal" class="modal-trigger"><i
+                                        class="material-icons blue-text">add</i>Init</a></li>
+                            <li class="divider" tabindex="-1"></li>
+                            <li><a id="repo_del" data-target="repo_del_modal" class="modal-trigger"><i
+                                        class="material-icons red-text">remove</i>Delete</a></li>
+                        </ul>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <footer class="page-footer">
+        <div class="footer-copyright">
+            <div class="container">
+                © 2023 ALEXPRO100 Laboratories
+                <a class="right" href="https://github.com/alealexpro100"><i
+                        class="material-icons right">flag</i>Author</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

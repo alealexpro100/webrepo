@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Settings - WebRepo</title>
+    <!--  Android 5 Chrome Color-->
+    <meta name="theme-color" content="#EE6E73">
+    <!-- CSS and JS-->
+    <link rel="stylesheet" href="/static/materialize.css">
+    <link rel="stylesheet" href="/static/material-icons.css">
+    <link rel="stylesheet" href="/admin/admin.css">
+    <script src="/static/cash.js"></script>
+    <script src="/static/materialize.js"></script>
+</head>
+
+<body>
+    <header>
+        <nav>
+            <div class="nav-wrapper">
+                <a href="/admin" class="brand-logo" id="logo-container">
+                    <object id="front-page-logo" type="image/svg+xml" data="/static/logo_text.svg">Your browser does not
+                        support SVG</object>
+                </a>
+                <ul id="nav-mobile" class="right hide-on-med-and-down">
+                    <li class="active"><a href="/admin/settings"><i
+                                class="material-icons right">settings</i>Settings</a></li>
+                    <li><a href="/api/logout"><i class="material-icons right">logout</i>Exit</a></li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+    <main>
+        <div class="container">
+            <div class="card-panel">
+                <script>
+                    (function (e, t) {
+                        window.addEventListener('load', init);
+                        var server_settings = {
+                            "AdminUser": null,
+                            "ScoopEnabled": null,
+                            "ScoopDir": null,
+                            "ScoopInitRepo": null,
+                            "repos": null,
+                            "AptlyLocal": null,
+                            "AptlyURL": null };
+                        async function update_server_data() {
+                            $("#user").prop('value', server_settings.AdminUser);
+                            $("#ScoopEnabled").prop('checked', server_settings.ScoopEnabled);
+                            console.log($("#ScoopEnabled").prop('checked'));
+                            $("#ScoopDir").prop('value', server_settings.ScoopDir);
+                            $("#ScoopInitRepo").prop('value', server_settings.ScoopInitRepo);
+                            M.updateTextFields();
+                        }
+                        async function get_settings() {
+                            fetch("/api/settings/get_all", {
+                                method: "GET"
+                            }).then(async(res) => {
+                                if (res.ok) {
+                                    server_settings = await res.json();
+                                    update_server_data()
+                                } else {
+                                    M.toast({ text: "Error loading data!\nIs server running?" });
+                                }
+                            });
+                        }
+                        async function user_action() {
+                            var user, pass;
+                            user = $("#user").val();
+                            pass = $("#password").val();
+                            if (user == "" || pass == "") {
+                                M.toast({ text: "Error: one or more fields are empty." });
+                                return;
+                            }
+                            fetch("/api/settings/set_auth?username=" + user + "&password=" + pass, {
+                                method: "POST"
+                            }).then(res => {
+                                if (res.ok) {
+                                    M.toast({ text: "Success." });
+                                } else {
+                                    M.toast({ text: "Error: " + res.statusText });
+                                }
+                            });
+                        }
+                        async function scoop_action() {
+                            var user, pass;
+                            ScoopEnabled = $("#ScoopEnabled").prop('checked');
+                            ScoopDir = $("#ScoopDir").val();
+                            ScoopInitRepo = $("#ScoopInitRepo").val();
+                            if (user == "" || pass == "") {
+                                M.toast({ text: "Error: one or more fields are empty." });
+                                return;
+                            }
+                            fetch("/api/settings/set_auth?username=" + user + "&password=" + pass, {
+                                method: "POST"
+                            }).then(res => {
+                                if (res.ok) {
+                                    M.toast({ text: "Success." });
+                                } else {
+                                    M.toast({ text: "Error: " + res.statusText });
+                                }
+                            });
+                        }
+                        function check(element) {
+                            console.log($(element));
+                            if ($(element).val() == "")
+                                $(element).addClass("invalid");
+                            else
+                                $(element).removeClass("invalid");
+                        }
+                        function init() {
+                            M.AutoInit();
+                            for (obj in ["#user", "#password"]) {
+                                $(obj).on("change", function () { check(this); });
+                            }
+                            $('#user_button').on("click", user_action);
+                            get_settings();
+                        }
+                    })();
+                </script>
+                <h4 class="center-align">Settings</h4>
+                <ul class="collapsible">
+                    <li>
+                        <div class="collapsible-header"><i class="material-icons">person</i>Auth settings</div>
+                        <div class="collapsible-body">
+                            <div class="row">
+                                <form class="col s12">
+                                    <div class="row">
+                                        <div class="input-field col s12">
+                                            <input id="user" type="text">
+                                            <label for="user">User</label>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="input-field col s12">
+                                            <input id="password" type="password">
+                                            <label for="password">Password</label>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                            <a class="waves-effect waves-light btn" id="user_button">Save</a>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="collapsible-header"><i class="material-icons">icecream</i>Scoop</div>
+                        <div class="collapsible-body">
+                            <div class="row">
+                                <form class="col s12">
+                                    <div class="row">
+                                        <div class="input-field col s12">
+                                            <p>
+                                                <label>
+                                                    <input id="ScoopEnabled" type="checkbox" />
+                                                    <span>Enabled</span>
+                                                </label>
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="input-field col s12">
+                                            <input id="ScoopDir" type="text">
+                                            <label for="ScoopDir">ScoopDir</label>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="input-field col s12">
+                                            <input id="ScoopInitRepo" type="text">
+                                            <label for="ScoopInitRepo">ScoopInitRepo</label>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                            <a class="waves-effect waves-light btn" id="user_button">Save</a>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="collapsible-header"><i class="material-icons">label_important</i>Aptly</a></div>
+                        <div class="collapsible-body"><span>Lorem ipsum dolor sit amet.</span></div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </main>
+    <footer class="page-footer">
+        <div class="footer-copyright">
+            <div class="container">
+                © 2023 ALEXPRO100 Laboratories
+                <a class="right" href="https://github.com/alealexpro100"><i
+                        class="material-icons right">flag</i>Author</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

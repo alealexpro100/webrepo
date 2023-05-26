@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Scoop - WebRepo</title>
+    <!--  Android 5 Chrome Color-->
+    <meta name="theme-color" content="#EE6E73">
+    <!-- CSS and JS-->
+    <link rel="stylesheet" href="/static/materialize.css">
+    <link rel="stylesheet" href="/static/material-icons.css">
+    <link rel="stylesheet" href="/admin/admin.css">
+    <script src="/static/cash.js"></script>
+    <script src="/static/materialize.js"></script>
+    <!-- Import jsoneditor -->
+    <link rel="stylesheet" href="/static/jsoneditor.css">
+    <script src="/static/jsoneditor.js"></script>
+</head>
+
+<body>
+    <header>
+        <nav>
+            <div class="nav-wrapper">
+                <a href="/admin" class="brand-logo" id="logo-container">
+                    <object id="front-page-logo" type="image/svg+xml" data="/static/logo_text.svg">Your browser does not
+                        support SVG</object>
+                </a>
+                <ul id="nav-mobile" class="right hide-on-med-and-down">
+                    <li class="cyan"><a><i class="material-icons right">icecream</i><b>Scoop</b></a></li>
+                    <li><a href="/admin/settings"><i class="material-icons right">settings</i>Settings</a></li>
+                    <li><a href="/api/logout"><i class="material-icons right">logout</i>Exit</a></li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+    <main>
+        <script>
+            (function (e, t) {
+                window.addEventListener('load', init);
+                var data = {
+                    packages: []
+                };
+                var package_schema;
+                var package_json;
+                var repo_name;
+                async function load_schema() {
+                    await fetch("/static/scoop_schema.json", {
+                        method: "GET"
+                    }).then(async (res) => {
+                        if (res.ok) {
+                            package_schema = await res.json();
+                        } else {
+                            M.toast({ text: "Error loading schema!" });
+                        }
+                    });
+                }
+                async function load_example() {
+                    await fetch("/static/scoop_example.json", {
+                        method: "GET"
+                    }).then(async (res) => {
+                        if (res.ok) {
+                            package_json = await res.json();
+                        } else {
+                            M.toast({ text: "Error example json!" });
+                        }
+                    });
+                }
+                function load_jsoneditor() {
+                    // create the editor
+                    const container = document.getElementById("jsoneditor")
+                    container.innerHTML='';
+                    const options = {
+                        mode: 'tree',
+                        modes: ['code', 'tree'],
+                        schema: package_schema
+                    }
+                    const editor = new JSONEditor(container, options)
+
+                    editor.set(package_json)
+
+                    // get json
+                    const updatedJson = editor.get();
+                }
+                async function get_packages() {
+                    await fetch("/api/scoop/packages/list?repo=" + repo_name, {
+                        method: "GET"
+                    }).then(async (res) => {
+                        if (res.ok) {
+                            data = await res.json();
+                        } else {
+                            M.toast({ text: "Error loading packages list!\nIs server running?" });
+                        }
+                    });
+                }
+                async function get_package(name) {
+                    await fetch("/api/scoop/packages/get?repo=" + repo_name+"&name="+name, {
+                        method: "GET"
+                    }).then(async (res) => {
+                        if (res.ok) {
+                            package_json = await res.json();
+                        } else {
+                            M.toast({ text: "Error getting package \""+name+"\"!" });
+                        }
+                    });
+                }
+                function update_packages() {
+                    if (data.packages.length != 0) {
+                        var to_fill = $("#packages_table");
+                        to_fill.empty();
+                        for (package in data.packages) {
+                            var package_name = data.packages[package];
+                            if (package_name==".gitkeep")
+                                continue;
+                            package_name=package_name.slice(0,-5);
+                            line = $("<a href=\"#!\" class=\"collection-item modal-trigger\"><div style=\"font-size: 150%;\">Package \"" + package_name + "\"</div></a>");
+                            line.attr("packagename", package_name);
+                            line.attr("data-target", "package_add_modal")
+                            to_fill.append(line);
+                        }
+                    }
+                }
+                // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy
+                // Pretty fast way to get url params
+                const params = new Proxy(new URLSearchParams(window.location.search), {
+                    get: (searchParams, prop) => searchParams.get(prop),
+                });
+                try {
+                    repo_name = params.name;
+                } catch {
+                    console.error("Parameter `name` not found! Using fallback `test` name.")
+                    repo_name = "test";
+                }
+                console.log(params.name);
+                async function init() {
+                    M.AutoInit();
+                    $("#repo_text").text("Repo \"" + repo_name + "\" packages.")
+                    await get_packages();
+                    await load_schema();
+                    await load_example();
+                    update_packages();
+                    {
+                        var elems = document.querySelectorAll('.modal');
+                        var instances = M.Modal.init(elems, {
+                            onOpenStart: async function(modal, trigger) {
+                                var pn = $(trigger).attr("packagename");
+                                if (pn!="" && pn!=undefined) {
+                                    $("#package_name").prop('value', pn);
+                                    await get_package(pn);
+                                } else {
+                                    $("#package_name").prop('value', "example");
+                                }
+                                load_jsoneditor();
+                        }});
+                    };
+                    $('#add_button').on("click", element => {
+                        var name;
+                        name = $("#package_name").val();
+                        if (name == "") {
+                            M.toast({ text: "Error: one or more fields are empty." });
+                            return;
+                        }
+                        var dataup = new FormData()
+                        dataup.append('document',JSON.stringify(package_json))
+                        $("#add_wait").removeAttr("hidden");
+                        fetch("/api/scoop/packages/add?repo=" + repo_name+"&name="+name, {
+                            method: "POST",
+                            body: dataup,
+                        }).then((res) => {
+                            if (res.ok) {
+                                M.toast({ text: "Package added. Reloading page" });
+                                window.location.reload();
+                            } else {
+                                M.toast({ text: "Error adding package \""+name+"\"!" });
+                            }
+                        });
+                    });
+                    $('#del_button').on("click", element => {
+                        var name;
+                        name = $("#package_name").val();
+                        if (name == "") {
+                            M.toast({ text: "Error: one or more fields are empty." });
+                            return;
+                        }
+                        $("#add_wait").removeAttr("hidden");
+                        fetch("/api/scoop/packages/del?repo=" + repo_name+"&name="+name, {
+                            method: "POST",
+                        }).then(async (res) => {
+                            if (res.ok) {
+                                M.toast({ text: "Package deleted. Reloading page" });
+                                window.location.reload();
+                            } else {
+                                M.toast({ text: "Error getting package \""+name+"\"!" });
+                            }
+                        });
+                    });
+                }
+            })();
+        </script>
+        <div id="package_add_modal" class="modal">
+            <div class="modal-content modal-body">
+                <h4 class="dispname">Add new package</h4>
+                <div>
+                    <p>
+                    <div class="input-field">
+                        <input id="package_name" type="text" />
+                        <span>Name of new (modded) package</span>
+                    </div>
+                    </p>
+                    <p>
+                        <div class="input-field">
+                            <div id="jsoneditor"></div>
+                        </div>
+                    </p>
+                </div>
+                <a class="waves-effect waves-light btn" id="add_button">Add</a>
+                <a class="waves-effect waves-light btn" id="del_button">Del</a>
+                <div id="add_wait" hidden>
+                    <h5>Working on it...</h5>
+                    <div class="progress">
+                        <div class="indeterminate"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a href="#!" class="modal-close waves-effect btn-flat">Close</a>
+            </div>
+        </div>
+        <div class="container">
+            <div class="card-panel">
+                <h4 id="repo_text" class="center-align">Repository packages</h4>
+                <div class="collection" id="packages_table">
+                    <a href="#!" class="collection-item">
+                        <h4 class="red-text">No packages found</h4>
+                    </a>
+                </div>
+                <div class="row">
+                    <div class="col offset-s9 s4">
+                        <a class='modal-trigger btn' href='#!' data-target='package_add_modal'><i
+                                class="material-icons right">add_circle</i>Add package</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <footer class="page-footer">
+        <div class="footer-copyright">
+            <div class="container">
+                © 2023 ALEXPRO100 Laboratories
+                <a class="right" href="https://github.com/alealexpro100"><i
+                        class="material-icons right">flag</i>Author</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>

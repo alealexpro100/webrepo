@@ -9,7 +9,9 @@ func main() {
 	//Scoop module
 	ScoopModule := new(mod_scoop)
 	ScoopModule.init(cfg)
-	ScoopGroup := s.api.Group("scoop")
-	ScoopModule.init_route(ScoopGroup)
+	ScoopModule.init_route(s.api.Group("scoop"))
+	SettingsModule := new(mod_settings)
+	SettingsModule.init(cfg)
+	SettingsModule.init_route(s.api.Group("settings"))
 	s.start()
 }

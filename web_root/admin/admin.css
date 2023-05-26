@@ -15,3 +15,15 @@ main {
     height: 2.1em;
     pointer-events: none;
 }
+
+.page-footer, nav {
+    background-color: rgb(0, 79, 168);
+}
+
+a {
+    color: blue;
+}
+
+#jsoneditor input[type=text] {
+    width: initial;
+}

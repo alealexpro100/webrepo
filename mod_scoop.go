@@ -64,17 +64,16 @@ func (m *mod_scoop) list_packages(repo string) ([]string, error) {
 }
 
 // We do not need mod function, as this function will do the same work
-func (m *mod_scoop) add_package(repo, package_name, contents string) error {
+func (m *mod_scoop) add_package(repo, package_name string, contents string) error {
 	// Write or mod file
-	f, err := os.Create(path.Join(m.cfg.ScoopDir, repo, "bucket", package_name))
+	f, err := os.Create(path.Join(m.cfg.ScoopDir, repo, "bucket", package_name+".json"))
 	if err != nil {
 		return err
 	}
-	_, err = f.Write([]byte(contents))
+	if _, err = f.WriteString(contents); err != nil {
+		return err
+	}
 	f.Close()
-	if err != nil {
-		return err
-	}
 	// git add
 	repogit, err := git.PlainOpen(path.Join(m.cfg.ScoopDir, repo))
 	if err != nil {
@@ -84,7 +83,7 @@ func (m *mod_scoop) add_package(repo, package_name, contents string) error {
 	if err != nil {
 		return err
 	}
-	_, err = worktree.Add(path.Join("bucket", package_name))
+	_, err = worktree.Add(path.Join("bucket", package_name+".json"))
 	if err != nil {
 		return err
 	}
@@ -104,13 +103,45 @@ func (m *mod_scoop) add_package(repo, package_name, contents string) error {
 }
 
 func (m *mod_scoop) get_package(repo, package_name string) (string, error) {
-	f, err := os.Open(path.Join(m.cfg.ScoopDir, repo, "bucket", package_name))
+	f, err := os.Open(path.Join(m.cfg.ScoopDir, repo, "bucket", package_name+".json"))
 	if err != nil {
 		return "", err
 	}
 	c, err := ioutil.ReadAll(f)
 	f.Close()
 	return string(c), err
+}
+
+func (m *mod_scoop) del_package(repo, package_name string) error {
+	err := os.Remove(path.Join(m.cfg.ScoopDir, repo, "bucket", package_name+".json"))
+	if err != nil {
+		return err
+	}
+	// git add
+	repogit, err := git.PlainOpen(path.Join(m.cfg.ScoopDir, repo))
+	if err != nil {
+		return err
+	}
+	worktree, err := repogit.Worktree()
+	if err != nil {
+		return err
+	}
+	_, err = worktree.Remove(path.Join("bucket", package_name+".json"))
+	if err != nil {
+		return err
+	}
+	// git commit
+	_, err = worktree.Commit(package_name+": auto del", &git.CommitOptions{
+		Author: &object.Signature{
+			Name:  m.cfg.AdminUser,
+			Email: "worker@test.org",
+			When:  time.Now(),
+		},
+	})
+	if err != nil {
+		return err
+	}
+	return err
 }
 
 func (m *mod_scoop) init_route(loc *echo.Group) {
@@ -130,7 +161,7 @@ func (m *mod_scoop) init_route(loc *echo.Group) {
 	loc.POST("/repo/init", func(c echo.Context) error {
 		name := c.QueryParam("name")
 		if name == "" {
-			return c.String(http.StatusInternalServerError, "No name param.")
+			return c.String(http.StatusBadRequest, "No name param.")
 		}
 		err := m.init_repo(name)
 		if err != nil {
@@ -140,11 +171,14 @@ func (m *mod_scoop) init_route(loc *echo.Group) {
 	})
 	loc.POST("/repo/clone", func(c echo.Context) error {
 		name := c.QueryParam("name")
-		url := c.QueryParam("url")
+		url_string := c.QueryParam("url")
 		if name == "" {
-			return c.String(http.StatusInternalServerError, "No name param.")
+			return c.String(http.StatusBadRequest, "No name param.")
 		}
-		err := m.clone_repo(name, url)
+		if url_string == "" {
+			return c.String(http.StatusBadRequest, "No url param.")
+		}
+		err := m.clone_repo(name, url_string)
 		if err != nil {
 			return c.String(http.StatusInternalServerError, "Failed to init repo.")
 		}
@@ -153,11 +187,78 @@ func (m *mod_scoop) init_route(loc *echo.Group) {
 	loc.POST("/repo/del", func(c echo.Context) error {
 		name := c.QueryParam("name")
 		if name == "" {
-			return c.String(http.StatusInternalServerError, "No name param.")
+			return c.String(http.StatusBadRequest, "No name param.")
 		}
 		err := m.del_repo(name)
 		if err != nil {
 			return c.String(http.StatusInternalServerError, "Failed to del repo.")
+		}
+		return c.String(http.StatusOK, "ok")
+	})
+	loc.GET("/packages/list", func(c echo.Context) error {
+		repo := c.QueryParam("repo")
+		if repo == "" {
+			return c.String(http.StatusBadRequest, "No repo param.")
+		}
+		packages, err := m.list_packages(repo)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "Failed to receive packages list.")
+		}
+		type Data struct {
+			Packages []string `json:"packages"`
+		}
+		data := &Data{
+			Packages: packages,
+		}
+		return c.JSON(http.StatusOK, data)
+	})
+	loc.GET("/packages/get", func(c echo.Context) error {
+		repo := c.QueryParam("repo")
+		if repo == "" {
+			return c.String(http.StatusBadRequest, "No repo param.")
+		}
+		name := c.QueryParam("name")
+		if name == "" {
+			return c.String(http.StatusBadRequest, "No name param.")
+		}
+		packagestring, err := m.get_package(repo, name)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "Failed to get package.")
+		}
+		return c.String(http.StatusOK, packagestring)
+	})
+	loc.POST("/packages/add", func(c echo.Context) error {
+		repo := c.QueryParam("repo")
+		if repo == "" {
+			return c.String(http.StatusBadRequest, "No repo param.")
+		}
+		name := c.QueryParam("name")
+		if name == "" {
+			return c.String(http.StatusBadRequest, "No name param.")
+		}
+		// Source
+		json_file := c.FormValue("document")
+		if json_file == "" {
+			return c.String(http.StatusBadRequest, "Failed to get package file.")
+		}
+		err := m.add_package(repo, name, json_file)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "Failed to create package file.")
+		}
+		return c.String(http.StatusOK, "ok")
+	})
+	loc.POST("/packages/del", func(c echo.Context) error {
+		repo := c.QueryParam("repo")
+		if repo == "" {
+			return c.String(http.StatusBadRequest, "No repo param.")
+		}
+		name := c.QueryParam("name")
+		if name == "" {
+			return c.String(http.StatusBadRequest, "No name param.")
+		}
+		err := m.del_package(repo, name)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "Failed to get package.")
 		}
 		return c.String(http.StatusOK, "ok")
 	})

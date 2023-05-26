@@ -12,40 +12,44 @@
     <link rel="stylesheet" href="admin.css">
     <script src="/static/zepto.js"></script>
     <script src="/static/materialize.js"></script>
-    <script src="admin.js"></script>
+    <script src="/admin/admin.js"></script>
 </head>
 
 <body>
     <header>
         <nav>
             <div class="nav-wrapper">
-                <a href="#" class="brand-logo" id="logo-container">
+                <a href="/admin" class="brand-logo" id="logo-container">
                     <object id="front-page-logo" type="image/svg+xml" data="/static/logo_text.svg">Your browser does not support SVG</object>
                 </a>
                 <ul id="dropdown_repos" class="dropdown-content">
-                    <li><a href="#!"><i class="material-icons right">icecream</i>Scoop</a></li>
-                    <li><a href="#!"><i class="material-icons right">label_important</i>Apt</a></li>
-                </ul>
-                <ul id="dropdown_sys" class="dropdown-content">
-                    <li><a href="#!"><i class="material-icons right">restart_alt</i>Reload</a></li>
-                    <li><a href="#!"><i class="material-icons right">settings</i>Config</a></li>
-                    <li class="divider"></li>
-                    <li><a href="#!"><i class="material-icons right">logout</i>Exit</a></li>
+                    <li><a href="mod/scoop"><i class="material-icons right">icecream</i>Scoop</a></li>
+                    <li><a href="mod/aptly"><i class="material-icons right">label_important</i>Aptly</a></li>
                 </ul>
                 <ul id="nav-mobile" class="right hide-on-med-and-down">
                     <li><a class="dropdown-trigger" href="#!" data-target="dropdown_repos">Repositories<i class="material-icons right">arrow_drop_down</i></a></li>
-                    <li><a class="dropdown-trigger" href="#!" data-target="dropdown_sys">System actions<i class="material-icons right">arrow_drop_down</i></a></li>
+                    <li><a href="/admin/settings"><i class="material-icons right">settings</i>Settings</a></li>
+                    <li><a href="/api/logout"><i class="material-icons right">logout</i>Exit</a></li>
                 </ul>
             </div>
         </nav>
     </header>
     <main>
-        <div class="container" id="module_content">
+        <div class="container">
             <div class="card-panel">
                 <h4 class="center-align">Admin panel for <b>Web repository service.</b></h4>
                 <h3 class="center-align">Status: <b style="color: green;">ON</b></h3>
-                <h4 class="center-align">Made for You by:</h4>
-                <img src="/static/author.svg" alt="Logo of author">
+                <h4 class="center-align">For instructions, see <b>README.md</b> file.</h4>
+                <div class="divider"></div>
+                <div class="row center-align">
+                    <div class="col offset-s4 s4"><h3>Repositories</h3></div>
+                </div>
+                <div class="row center-align">
+                    <div class="col offset-s4 s4"><a class="waves-effect waves-light btn-large" href="mod/scoop"><i class="material-icons right">icecream</i>Scoop</a></div>
+                </div>
+                <div class="row center-align">
+                    <div class="col offset-s4 s4"><a class="waves-effect waves-light btn-large" href="mod/aptly"><i class="material-icons right">label_important</i>Aptly</a></div>
+                </div>
             </div>
         </div>
     </main>

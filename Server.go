@@ -106,6 +106,18 @@ func (s *Server) init(config *Config) {
 	r.Static("admin", path.Join(s.cfg.ClientPath, "admin"))
 	// Map /api route
 	s.api = r.Group("api/")
+	s.api.GET("logout", func(c echo.Context) error {
+		cookie := &http.Cookie{
+			Name:     "Authorization",
+			Value:    "",
+			Path:     "/",
+			Secure:   true,
+			HttpOnly: true,
+			MaxAge:   -1,
+		}
+		c.SetCookie(cookie)
+		return c.Redirect(http.StatusMovedPermanently, "/login")
+	})
 }
 
 func (s *Server) start() {

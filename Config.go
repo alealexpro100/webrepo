@@ -64,3 +64,17 @@ func (cfg *Config) set_auth(user, pass_hash string) {
 	cfg.AdminPassword = pass_hash
 	cfg.ConfigFile.SaveTo("config.ini")
 }
+
+func (cfg *Config) set_scoop(ScoopEnabled string, ScoopDir string, ScoopInitRepo string) {
+	cfg.ConfigFile.Section("scoop").Key("ScoopEnabled").SetValue(ScoopEnabled)
+	cfg.ConfigFile.Section("scoop").Key("ScoopDir").SetValue(ScoopDir)
+	cfg.ConfigFile.Section("scoop").Key("ScoopInitRepo").SetValue(ScoopInitRepo)
+	if ScoopEnabled == "true" {
+		cfg.ScoopEnabled = true
+	} else {
+		cfg.ScoopEnabled = false
+	}
+	cfg.ScoopDir = ScoopDir
+	cfg.ScoopInitRepo = ScoopInitRepo
+	cfg.ConfigFile.SaveTo("config.ini")
+}
