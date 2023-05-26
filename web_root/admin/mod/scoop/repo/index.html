@@ -43,6 +43,7 @@
                 var package_schema;
                 var package_json;
                 var repo_name;
+                var jsoneditor;
                 async function load_schema() {
                     await fetch("/static/scoop_schema.json", {
                         method: "GET"
@@ -74,12 +75,9 @@
                         modes: ['code', 'tree'],
                         schema: package_schema
                     }
-                    const editor = new JSONEditor(container, options)
+                    jsoneditor = new JSONEditor(container, options)
 
-                    editor.set(package_json)
-
-                    // get json
-                    const updatedJson = editor.get();
+                    jsoneditor.set(package_json)
                 }
                 async function get_packages() {
                     await fetch("/api/scoop/packages/list?repo=" + repo_name, {
@@ -87,6 +85,14 @@
                     }).then(async (res) => {
                         if (res.ok) {
                             data = await res.json();
+                            var new_packages=[];
+                            for (package in data.packages) {
+                                var package_name = data.packages[package];
+                                if (package_name==".gitkeep" || package_name == "app-name.json.template")
+                                    continue;
+                                new_packages.push(package_name);
+                            }
+                            data.packages = new_packages;
                         } else {
                             M.toast({ text: "Error loading packages list!\nIs server running?" });
                         }
@@ -109,8 +115,6 @@
                         to_fill.empty();
                         for (package in data.packages) {
                             var package_name = data.packages[package];
-                            if (package_name==".gitkeep")
-                                continue;
                             package_name=package_name.slice(0,-5);
                             line = $("<a href=\"#!\" class=\"collection-item modal-trigger\"><div style=\"font-size: 150%;\">Package \"" + package_name + "\"</div></a>");
                             line.attr("packagename", package_name);
@@ -130,7 +134,6 @@
                     console.error("Parameter `name` not found! Using fallback `test` name.")
                     repo_name = "test";
                 }
-                console.log(params.name);
                 async function init() {
                     M.AutoInit();
                     $("#repo_text").text("Repo \"" + repo_name + "\" packages.")
@@ -160,7 +163,7 @@
                             return;
                         }
                         var dataup = new FormData()
-                        dataup.append('document',JSON.stringify(package_json))
+                        dataup.append('document',JSON.stringify(jsoneditor.get()))
                         $("#add_wait").removeAttr("hidden");
                         fetch("/api/scoop/packages/add?repo=" + repo_name+"&name="+name, {
                             method: "POST",
