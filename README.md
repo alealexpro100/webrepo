@@ -7,16 +7,21 @@ Developed to be used under Alpine-linux, but it should work on other Linux distr
 ## Architecture
 
 * There are two parts: client and server.
-* Client is written using [Materialize](https://github.com/materializecss/materialize), [Material icons](https://fonts.google.com/icons?selected=Material+Icons) and Cash (alternative to jquery).
+* Client is written using [Materialize](https://github.com/materializecss/materialize), [Material icons](https://fonts.google.com/icons?selected=Material+Icons) and Cash.
 * Server is written using Golang and [Echo](https://echo.labstack.com).
 
 ## API
 
-* `/api/plugins?action=list` - Get json file with list of plugins. NOTE: Plugin list is updated only on startup.
-* `/api/plugins?action=get_status&id=your_id` - Get status of job with `your_id` id.
-* `/api/plugins?action=jobs_clear` - Clear completed jobs. Sends `bad requested` if any job is not completed.
-* `/api/plugins/your_plugin?action=add&param=your_param` - Start `your_plugin` with `your_param` parameter.
-* `/api/internal?action=set_auth&user=your_user&pass_hash=your_pass_hash` - Set defined user and pass_hash.
+* `/api/settings/get_all`
+* `/api/settings/set_auth`
+* `/api/settings/set_scoop`
+* `/api/scoop/repo/list`
+* `/api/scoop/repo/init`
+* `/api/scoop/repo/add`
+* `/api/scoop/repo/del`
+* `/api/scoop/package/list`
+* `/api/scoop/package/add`
+* `/api/scoop/package/del`
 
 ## Notes
 
