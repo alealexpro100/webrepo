@@ -6,4 +6,10 @@ func main() {
 	cfg.init()
 	s := new(Server)
 	s.init(cfg)
+	//Scoop module
+	ScoopModule := new(mod_scoop)
+	ScoopModule.init(cfg)
+	ScoopGroup := s.api.Group("scoop")
+	ScoopModule.init_route(ScoopGroup)
+	s.start()
 }

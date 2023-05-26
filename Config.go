@@ -14,6 +14,10 @@ type Config struct {
 	AdminPassword string
 	ScoopEnabled  bool
 	ScoopDir      string
+	ScoopInitRepo string
+	AptlyEnabled  bool
+	AptlyLocal    bool
+	AptlyURL      string
 	ConfigFile    *ini.File
 }
 
@@ -33,11 +37,23 @@ func (cfg *Config) get() error {
 	cfg.ClientPath = cfg.ConfigFile.Section("main").Key("client_path").String()
 	cfg.AdminUser = cfg.ConfigFile.Section("main").Key("user").String()
 	cfg.AdminPassword = cfg.ConfigFile.Section("main").Key("password").String()
+	// For scoop
 	cfg.ScoopEnabled, err = cfg.ConfigFile.Section("scoop").Key("enabled").Bool()
-	cfg.ScoopDir = cfg.ConfigFile.Section("scoop").Key("directory").String()
 	if err != nil {
 		return err
 	}
+	cfg.ScoopDir = cfg.ConfigFile.Section("scoop").Key("directory").String()
+	cfg.ScoopInitRepo = cfg.ConfigFile.Section("scoop").Key("init_repo").String()
+	// For aptly
+	cfg.AptlyEnabled, err = cfg.ConfigFile.Section("aptly").Key("enabled").Bool()
+	if err != nil {
+		return err
+	}
+	cfg.AptlyLocal, err = cfg.ConfigFile.Section("aptly").Key("local").Bool()
+	if err != nil {
+		return err
+	}
+	cfg.AptlyURL = cfg.ConfigFile.Section("aptly").Key("url").String()
 	return nil
 }
 
