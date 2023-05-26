@@ -16,6 +16,7 @@ import (
 type Server struct {
 	cfg *Config
 	api *echo.Group
+	e   *echo.Echo
 }
 
 // Generate token for auth from curl
@@ -70,29 +71,29 @@ func (s *Server) login_from_page(c echo.Context) error {
 func (s *Server) init(config *Config) {
 	// Set config
 	s.cfg = config
-	e := echo.New()
+	s.e = echo.New()
 
 	// Middleware
-	e.Use(middleware.Logger())
-	e.Use(middleware.Recover())
+	s.e.Use(middleware.Logger())
+	s.e.Use(middleware.Recover())
 
 	// All static files and login page are public
 	// We serve them to correctly show login page
-	e.Static("/static", path.Join(s.cfg.ClientPath, "static"))
-	e.File("/favicon.ico", path.Join(s.cfg.ClientPath, "favicon.ico"))
-	e.Static("/login", path.Join(s.cfg.ClientPath, "login"))
+	s.e.Static("/static", path.Join(s.cfg.ClientPath, "static"))
+	s.e.File("/favicon.ico", path.Join(s.cfg.ClientPath, "favicon.ico"))
+	s.e.Static("/login", path.Join(s.cfg.ClientPath, "login"))
 
 	// Login route
-	e.POST("/api/login", s.login)          // for REST API
-	e.GET("/api/login", s.login_from_page) // for Browser
+	s.e.POST("/api/login", s.login)          // for REST API
+	s.e.GET("/api/login", s.login_from_page) // for Browser
 
 	// Redirect if unauthenticated from root to login page
-	e.GET("/", func(c echo.Context) error {
+	s.e.GET("/", func(c echo.Context) error {
 		return c.Redirect(http.StatusPermanentRedirect, "/login")
 	})
 
 	// Protected group
-	r := e.Group("/")
+	r := s.e.Group("/")
 	r.Use(echojwt.WithConfig(echojwt.Config{
 		SigningKey:  []byte("secret"),
 		TokenLookup: "cookie:Authorization",
@@ -104,8 +105,9 @@ func (s *Server) init(config *Config) {
 	// Map admin
 	r.Static("admin", path.Join(s.cfg.ClientPath, "admin"))
 	// Map /api route
-	s.api = r.Group("/api")
+	s.api = r.Group("api/")
+}
 
-	// Start server
-	e.Logger.Fatal(e.Start(":" + s.cfg.Port))
+func (s *Server) start() {
+	s.e.Logger.Fatal(s.e.Start(":" + s.cfg.Port))
 }

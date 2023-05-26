@@ -1,3 +1,5 @@
 go.sum
 server.exe
 vendor
+dir_scoop
+__debug_bin
